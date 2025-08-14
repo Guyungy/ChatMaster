@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">聊天大师</string>
+    <string name="accessibility_service_description">聊天大师：情感分析与聊天指导</string>
+</resources>
