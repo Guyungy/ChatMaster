@@ -1,7 +1,5 @@
 package com.liganma.chatmaster
 
-import android.content.Context
-import android.content.ContextWrapper
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -32,12 +30,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-}
-
-fun Context.findActivity(): AppCompatActivity? = when (this) {
-    is AppCompatActivity -> this
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
 }
 
 @Composable

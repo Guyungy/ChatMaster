@@ -1,11 +1,19 @@
 package com.liganma.chatmaster
 
 import android.app.Service
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.animateContentSize
@@ -75,6 +83,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -96,6 +105,17 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration
 
 var FLOAT_WINDOW = "float_window"
+
+
+// 复制功能的扩展实现
+fun copyToClipboard(context: Context, text: String) {
+
+    val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    val clipData = ClipData.newPlainText("chat_reply", text)
+    clipboardManager.setPrimaryClip(clipData)
+
+    Toast.makeText(context, "内容已复制到剪贴板", Toast.LENGTH_SHORT).show()
+}
 
 fun showFloat(context: Context){
     if(!FloatingX.isInstalled(FLOAT_WINDOW)){
@@ -230,11 +250,8 @@ fun FloatingChatAssistant(context: Context = LocalContext.current) {
                                 .background(MaterialTheme.colorScheme.primary)
                                 .clickable {
                                     analysisState = AnalysisState.Loading
-                                    analyzingPage(context)
-                                    coroutineScope.launch {
-                                        delay(1000)
-                                        analysisState = AnalysisState.Success
-                                    }
+                                    analysisResult = analyzingPage(context)
+                                    analysisState = AnalysisState.Success
                                 }
                                 .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
                             contentAlignment = Alignment.Center
@@ -371,7 +388,7 @@ fun AnalysisResultView(analysis: SuggestMessage) {
 
 // 单条建议组件
 @Composable
-fun SuggestionItem(index: Int, text: String) {
+fun SuggestionItem(index: Int, text: String,context: Context = LocalContext.current) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -379,8 +396,10 @@ fun SuggestionItem(index: Int, text: String) {
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0xFFF5F7FA))
             .clickable {
-                /* 点击后填充到输入框 */
-
+                /**
+                 * 复制到列列表
+                 */
+                copyToClipboard(context,text)
             }
             .padding(12.dp)
     ) {

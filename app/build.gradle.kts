@@ -29,11 +29,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -44,11 +44,12 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.2.1")
 
     // 无障碍
-    //按需添加
-    //基础库（必须）
     implementation("com.github.ven-coder.Assists:assists-base:3.2.180")
 
-    implementation("com.squareup.okhttp3:okhttp:5.1.0")
+    // deepseek
+    implementation("cn.lishiyuan:deepseek4j:1.0.1")
+    implementation("com.alibaba.fastjson2:fastjson2-kotlin:2.0.58")
+    implementation("org.slf4j:slf4j-api:2.0.13")
 
     // 浮窗
     implementation("io.github.petterpx:floatingx:2.3.5")
@@ -73,6 +74,10 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+
+    compileOnly("org.projectlombok:lombok:1.18.36")
+    annotationProcessor("org.projectlombok:lombok:1.18.36")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
