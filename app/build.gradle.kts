@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.liganma.chatmaster"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -50,6 +50,7 @@ dependencies {
     implementation("cn.lishiyuan:deepseek4j:1.0.1")
     implementation("com.alibaba.fastjson2:fastjson2-kotlin:2.0.58")
     implementation("org.slf4j:slf4j-api:2.0.13")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // 浮窗
     implementation("io.github.petterpx:floatingx:2.3.5")

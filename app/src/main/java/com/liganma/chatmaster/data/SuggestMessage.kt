@@ -13,8 +13,16 @@ data class SuggestMessage (
     val next: String,
 
     @JSONField(name = "suggest")
-    val suggest: List<String>,
+    val suggest: List<SuggestItem>,
 
     @JSONField(name = "analyze")
     var analyze: String
+)
+
+data class SuggestItem (
+    @JSONField(name = "type")
+    val type: String,
+
+    @JSONField(name = "content")
+    val content: String
 )

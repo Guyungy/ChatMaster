@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -61,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 import com.liganma.chatmaster.theme.*
+import com.liganma.chatmaster.utils.SK_REGEX
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -69,8 +71,6 @@ import kotlinx.coroutines.launch
 
 // 预设数据类
 data class PresetPrompt(val name: String, val content: String)
-
-
 
 val presetPrompts = listOf(
     PresetPrompt("情感交流优化专家", DEFAULT_PROMPT),
@@ -362,6 +362,7 @@ fun SettingsScreen(
     ) {
     var app = LocalContext.current.applicationContext as App
     var passwordHidden by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf("") } // 错误消息状态
 
     // 获取 Compose 协程作用域
     val coroutineScope = rememberCoroutineScope()
@@ -466,23 +467,41 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+
                 OutlinedTextField(
                     value = localApiKey,
                     onValueChange = { newKey ->
                         localApiKey = newKey
-                        app.settingsRepository.saveAccessKey(newKey)
-                    },
-                    label = { Text("sk-xxxxxxxxxxxxxxxxxxxxxxxx") },
-                    trailingIcon = {
-                        IconButton(
-                            onClick = {
-                                passwordHidden = !passwordHidden
-                            }
-                        ){
-                            Icon(Icons.Default.RemoveRedEye, null)
+
+                        // 校验逻辑：检查是否包含非法字符
+                        if (!SK_REGEX.matches(newKey)) {
+                            // 显示首个非法字符的提示（更友好）
+                            errorMessage = "格式错误"
+                        } else {
+                            errorMessage = ""
+                            app.settingsRepository.saveAccessKey(newKey)
                         }
                     },
-                    visualTransformation = if(passwordHidden) PasswordVisualTransformation() else VisualTransformation.None,
+                    label = { Text("API Key") },
+                    trailingIcon = {
+                        IconButton(onClick = { passwordHidden = !passwordHidden }) {
+                            Icon(
+                                imageVector = if (passwordHidden) Icons.Default.RemoveRedEye else Icons.Default.VisibilityOff,
+                                contentDescription = "Toggle password visibility"
+                            )
+                        }
+                    },
+                    visualTransformation = if (passwordHidden) PasswordVisualTransformation() else VisualTransformation.None,
+                    isError = errorMessage.isNotBlank(), // 触发错误状态样式
+                    supportingText = {
+                        if (errorMessage.isNotBlank()) {
+                            Text(
+                                text = errorMessage,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -492,7 +511,12 @@ fun SettingsScreen(
                         focusedLabelColor = MaterialTheme.colorScheme.primary,
                         unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                        unfocusedIndicatorColor = MaterialTheme.colorScheme.outline
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.outline,
+                        // 错误状态颜色
+                        errorContainerColor = MaterialTheme.colorScheme.surface,
+                        errorTextColor = MaterialTheme.colorScheme.error,
+                        errorLabelColor = MaterialTheme.colorScheme.error,
+                        errorIndicatorColor = MaterialTheme.colorScheme.error
                     )
                 )
             }

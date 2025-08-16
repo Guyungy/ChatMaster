@@ -27,6 +27,8 @@ import androidx.compose.animation.with
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +38,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -81,8 +84,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.pointer.pointerInput
 
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
@@ -91,17 +96,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import com.liganma.chatmaster.data.SuggestItem
 import com.liganma.chatmaster.data.SuggestMessage
 import com.petterp.floatingx.FloatingX
+import com.petterp.floatingx.assist.FxDisplayMode
 import com.petterp.floatingx.assist.FxGravity
 import com.petterp.floatingx.assist.FxScopeType
 import com.petterp.floatingx.compose.enableComposeSupport
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.time.Duration
 
 var FLOAT_WINDOW = "float_window"
@@ -132,6 +143,7 @@ fun showFloat(context: Context){
             setContext(context)
             setEdgeOffset(24.0f)
             setGravity(FxGravity.RIGHT_OR_TOP)
+            setDisplayMode(FxDisplayMode.Normal)
             setTag(FLOAT_WINDOW)
             setLayoutView(composeView)
             setScopeType(FxScopeType.SYSTEM_AUTO)
@@ -151,18 +163,27 @@ fun FloatingChatAssistant(context: Context = LocalContext.current) {
 
     // 保持原有的分析状态管理
     var analysisState by remember { mutableStateOf(AnalysisState.Idle) }
-    var analysisResult by remember { mutableStateOf(SuggestMessage("无","无", listOf("无"),"无")) }
+    var analysisResult by remember { mutableStateOf(EMPTY) }
     val coroutineScope = rememberCoroutineScope()
 
     // 根布局：根据状态动态调整尺寸
     Box(
         modifier = Modifier
+//            .pointerInput(Unit){
+//                detectTapGestures (
+//                    onPress = {
+//                        FloatingX.control(FLOAT_WINDOW).configControl.setDisplayMode(FxDisplayMode.ClickOnly)
+//                    },
+//                    onLongPress = {
+//                        FloatingX.control(FLOAT_WINDOW).configControl.setDisplayMode(FxDisplayMode.Normal)
+//                    }
+//                )
+//            }
             // 动态尺寸：最小化50x50，展开300x400
             .width(if (isMinimized) 50.dp else 300.dp)
             .defaultMinSize(50.dp,50.dp)
-//            .height(if (isMinimized) 50.dp else 400.dp)
             .verticalScroll(rememberScrollState()) // 核心：添加垂直滚动
-            .animateContentSize(animationSpec = tween(300)) // 平滑过渡动画
+            .animateContentSize(animationSpec = tween(100)) // 平滑过渡动画
             .then(
                 if (isMinimized) {
                     // 最小化状态样式
@@ -250,8 +271,20 @@ fun FloatingChatAssistant(context: Context = LocalContext.current) {
                                 .background(MaterialTheme.colorScheme.primary)
                                 .clickable {
                                     analysisState = AnalysisState.Loading
-                                    analysisResult = analyzingPage(context)
-                                    analysisState = AnalysisState.Success
+                                    coroutineScope.launch {  // launch 默认从主线程开始
+                                        try {
+                                            // 1. 在后台线程执行网络请求
+                                            val result = withContext(Dispatchers.IO) {
+                                                analyzingPage(context)
+                                            }
+
+                                            // 2. 自动回到主线程（launch的初始上下文）
+                                            analysisResult = result
+                                            analysisState = AnalysisState.Success
+                                        } catch (e: Exception) {
+                                            analysisState = AnalysisState.Success
+                                        }
+                                    }
                                 }
                                 .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
                             contentAlignment = Alignment.Center
@@ -289,7 +322,9 @@ fun FloatingChatAssistant(context: Context = LocalContext.current) {
 // 分析结果视图
 @Composable
 fun AnalysisResultView(analysis: SuggestMessage) {
-    Column {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+    ) {
         // 情绪分析
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -323,6 +358,8 @@ fun AnalysisResultView(analysis: SuggestMessage) {
                     text = analysis.attitude,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -341,6 +378,8 @@ fun AnalysisResultView(analysis: SuggestMessage) {
                 text = analysis.next,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFFF5F7FA), RoundedCornerShape(8.dp))
@@ -361,6 +400,8 @@ fun AnalysisResultView(analysis: SuggestMessage) {
                 text = analysis.analyze,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFFF5F7FA), RoundedCornerShape(8.dp))
@@ -378,7 +419,7 @@ fun AnalysisResultView(analysis: SuggestMessage) {
         )
 
         analysis.suggest.forEachIndexed { index, suggestion ->
-            SuggestionItem(index + 1, suggestion)
+            SuggestionItem(suggestion)
             if (index < analysis.suggest.size - 1) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -388,7 +429,7 @@ fun AnalysisResultView(analysis: SuggestMessage) {
 
 // 单条建议组件
 @Composable
-fun SuggestionItem(index: Int, text: String,context: Context = LocalContext.current) {
+fun SuggestionItem(item: SuggestItem,context: Context = LocalContext.current) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
@@ -399,37 +440,45 @@ fun SuggestionItem(index: Int, text: String,context: Context = LocalContext.curr
                 /**
                  * 复制到列列表
                  */
-                copyToClipboard(context,text)
+                copyToClipboard(context,item.content)
             }
             .padding(12.dp)
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-        ) {
-            Text(
-                text = "$index",
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
-            )
+        Column {
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+            ) {
+                Text(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    text = item.type,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row {
+                Text(
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    text = item.content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "复制",
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            imageVector = Icons.Default.ContentCopy,
-            contentDescription = "复制",
-            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-            modifier = Modifier.size(20.dp)
-        )
+
     }
 }
 
