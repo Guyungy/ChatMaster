@@ -63,10 +63,12 @@ import androidx.navigation.NavController
 
 import com.liganma.chatmaster.theme.*
 import com.liganma.chatmaster.utils.SK_REGEX
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 // 预设数据类
@@ -440,7 +442,11 @@ fun SettingsScreen(
                     // 测试key按钮
                     Button(
                         onClick = {
-                            testKey(context)
+                            coroutineScope.launch {
+                                val result = withContext(Dispatchers.IO){
+                                    testKey(context)
+                                }
+                            }
                         },
                         modifier = Modifier
                             .height(36.dp),

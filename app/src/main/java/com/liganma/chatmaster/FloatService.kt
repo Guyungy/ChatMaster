@@ -282,7 +282,7 @@ fun FloatingChatAssistant(context: Context = LocalContext.current) {
                                             analysisResult = result
                                             analysisState = AnalysisState.Success
                                         } catch (e: Exception) {
-                                            analysisState = AnalysisState.Success
+                                            analysisState = AnalysisState.Idle
                                         }
                                     }
                                 }
@@ -396,16 +396,12 @@ fun AnalysisResultView(analysis: SuggestMessage) {
                 fontWeight = FontWeight.Medium
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
+
+            ExpandableText(
                 text = analysis.analyze,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFFF5F7FA), RoundedCornerShape(8.dp))
-                    .padding(12.dp)
             )
         }
 
@@ -424,6 +420,46 @@ fun AnalysisResultView(analysis: SuggestMessage) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+    }
+}
+
+@Composable
+fun ExpandableText(
+    text: String,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 3
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    var needsExpansion by remember { mutableStateOf(false) }
+
+    // 使用onTextLayout精确检测是否需要展开
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = if (isExpanded) Int.MAX_VALUE else maxLines,
+        overflow = if (isExpanded) TextOverflow.Clip else TextOverflow.Ellipsis,
+        modifier = modifier
+            .fillMaxWidth()
+            .background(Color(0xFFF5F7FA), RoundedCornerShape(8.dp))
+            .padding(12.dp)
+    )
+
+    // 仅在需要时显示展开/收起按钮
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp),
+        horizontalArrangement = Arrangement.End
+    ) {
+        Text(
+            text = if (isExpanded) "收起▲" else "展开▼",
+            color = MaterialTheme.colorScheme.primary,
+            fontSize = 12.sp,
+            modifier = Modifier
+                .clickable { isExpanded = !isExpanded }
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+        )
     }
 }
 
