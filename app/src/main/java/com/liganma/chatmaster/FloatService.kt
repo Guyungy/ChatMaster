@@ -1,44 +1,26 @@
 package com.liganma.chatmaster
 
-import android.app.Service
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
-import android.os.Build
-import android.os.IBinder
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
-import android.widget.FrameLayout
+import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.with
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,33 +29,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Minimize
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Shapes
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,27 +47,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.input.pointer.pointerInput
 
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.ViewCompat
-import androidx.lifecycle.setViewTreeLifecycleOwner
 import com.liganma.chatmaster.data.SuggestItem
 import com.liganma.chatmaster.data.SuggestMessage
 import com.petterp.floatingx.FloatingX
@@ -110,10 +65,8 @@ import com.petterp.floatingx.assist.FxGravity
 import com.petterp.floatingx.assist.FxScopeType
 import com.petterp.floatingx.compose.enableComposeSupport
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlin.time.Duration
 
 var FLOAT_WINDOW = "float_window"
 
@@ -156,29 +109,15 @@ fun showFloat(context: Context){
 fun closeFloat(){
     FloatingX.controlOrNull(FLOAT_WINDOW)?.cancel()
 }
+
 @Composable
 fun FloatingChatAssistant(context: Context = LocalContext.current) {
     // 添加最小化状态管理
     var isMinimized by remember { mutableStateOf(false) }
 
-    // 保持原有的分析状态管理
-    var analysisState by remember { mutableStateOf(AnalysisState.Idle) }
-    var analysisResult by remember { mutableStateOf(EMPTY) }
-    val coroutineScope = rememberCoroutineScope()
-
     // 根布局：根据状态动态调整尺寸
     Box(
         modifier = Modifier
-//            .pointerInput(Unit){
-//                detectTapGestures (
-//                    onPress = {
-//                        FloatingX.control(FLOAT_WINDOW).configControl.setDisplayMode(FxDisplayMode.ClickOnly)
-//                    },
-//                    onLongPress = {
-//                        FloatingX.control(FLOAT_WINDOW).configControl.setDisplayMode(FxDisplayMode.Normal)
-//                    }
-//                )
-//            }
             // 动态尺寸：最小化50x50，展开300x400
             .width(if (isMinimized) 50.dp else 300.dp)
             .defaultMinSize(50.dp,50.dp)
@@ -202,122 +141,139 @@ fun FloatingChatAssistant(context: Context = LocalContext.current) {
             ),
         contentAlignment = Alignment.Center
     ) {
-        if (isMinimized) {
-            // 最小化状态：纯圆形按钮
-            Icon(
-                imageVector = Icons.Default.OpenInFull,
-                contentDescription = "展开悬浮窗",
-                tint = Color.White,
-                modifier = Modifier.size(24.dp)
-            )
-        } else {
-            // 展开状态：完整内容
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // 顶部标题栏（包含最小化按钮）
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "聊天大师",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
-                    )
+        if (isMinimized) MinimizedView() else ExpandedView(onMinimize = {isMinimized = true},context)
+    }
+}
 
-                    Box(
-                        modifier = Modifier
-                        .size(36.dp)
+// 最小化视图
+@Composable
+private fun MinimizedView() {
+    Icon(
+        imageVector = Icons.Default.OpenInFull,
+        contentDescription = "展开悬浮窗",
+        tint = Color.White,
+        modifier = Modifier.size(24.dp)
+    )
+}
+
+// 展开视图
+@Composable
+private fun ExpandedView(onMinimize: () -> Unit,context: Context) {
+    // 保持原有的分析状态管理
+    var analysisState by remember { mutableStateOf(AnalysisState.Idle) }
+    var analysisResult by remember { mutableStateOf(EMPTY) }
+    val coroutineScope = rememberCoroutineScope()
+    // 展开状态：完整内容
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        HeaderBar(onMinimize)
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(16.dp))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+            ) {
+                // 分析按钮（保持原有设计）
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .size(50.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
-                            .clickable {
-                                isMinimized = true
+                        .clickable {
+                            analysisState = AnalysisState.Loading
+                            coroutineScope.launch {  // launch 默认从主线程开始
+                                try {
+                                    // 1. 在后台线程执行网络请求
+                                    val result = withContext(Dispatchers.IO) {
+                                        analyzingPage(context)
+                                    }
+
+                                    // 2. 自动回到主线程（launch的初始上下文）
+                                    analysisResult = result
+                                    analysisState = AnalysisState.Success
+                                } catch (e: Exception) {
+                                    Log.e("FloatService","e message : ${e.message}",e)
+                                    analysisState = AnalysisState.Idle
+                                }
                             }
+                        }
                         .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
-                        contentAlignment = Alignment.Center
-                        ){
-                        Icon(
-                            imageVector = Icons.Default.Minimize,
-                            contentDescription = "展开悬浮窗",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp).background(MaterialTheme.colorScheme.primary)
-                        )
+                    contentAlignment = Alignment.Center
+                ) {
+                    when (analysisState) {
+                        AnalysisState.Idle -> Icon(Icons.Default.Search, "开始分析", tint = Color.White, modifier =  Modifier.size(24.dp))
+                        AnalysisState.Loading -> CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier =  Modifier.size(24.dp))
+                        AnalysisState.Success -> Icon(Icons.Default.Refresh, "重新分析", tint = Color.White, modifier =  Modifier.size(24.dp))
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(16.dp))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp)
-                    ) {
-                        // 分析按钮（保持原有设计）
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.CenterHorizontally)
-                                .size(50.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
-                                .clickable {
-                                    analysisState = AnalysisState.Loading
-                                    coroutineScope.launch {  // launch 默认从主线程开始
-                                        try {
-                                            // 1. 在后台线程执行网络请求
-                                            val result = withContext(Dispatchers.IO) {
-                                                analyzingPage(context)
-                                            }
-
-                                            // 2. 自动回到主线程（launch的初始上下文）
-                                            analysisResult = result
-                                            analysisState = AnalysisState.Success
-                                        } catch (e: Exception) {
-                                            analysisState = AnalysisState.Idle
-                                        }
-                                    }
-                                }
-                                .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            when (analysisState) {
-                                AnalysisState.Idle -> Icon(Icons.Default.Search, "开始分析", tint = Color.White, modifier =  Modifier.size(24.dp))
-                                AnalysisState.Loading -> CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier =  Modifier.size(24.dp))
-                                AnalysisState.Success -> Icon(Icons.Default.Refresh, "重新分析", tint = Color.White, modifier =  Modifier.size(24.dp))
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 分析结果区域
-                        AnimatedContent(
-                            targetState = analysisState,
-                            transitionSpec = {
-                                slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Up) togetherWith
-                                        slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Down)
-                            }
-                        ) { state ->
-                            when (state) {
-                                AnalysisState.Idle -> PlaceholderMessage("点击按钮分析当前聊天")
-                                AnalysisState.Loading -> LoadingIndicator()
-                                AnalysisState.Success -> AnalysisResultView(analysisResult)
-                            }
-                        }
+                // 分析结果区域
+                AnimatedContent(
+                    targetState = analysisState,
+                    transitionSpec = {
+                        slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Up) togetherWith
+                                slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Down)
+                    }
+                ) { state ->
+                    when (state) {
+                        AnalysisState.Idle -> PlaceholderMessage("点击按钮分析当前聊天")
+                        AnalysisState.Loading -> LoadingIndicator()
+                        AnalysisState.Success -> AnalysisResultView(analysisResult)
                     }
                 }
             }
         }
     }
 }
+
+@Composable
+private fun HeaderBar(onMinimize: () -> Unit){
+    // 顶部标题栏（包含最小化按钮）
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "聊天大师",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f)
+        )
+
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable(onClick = onMinimize)
+                .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
+            contentAlignment = Alignment.Center
+        ){
+            Icon(
+                imageVector = Icons.Default.Minimize,
+                contentDescription = "展开悬浮窗",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp).background(MaterialTheme.colorScheme.primary)
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+}
+
 
 // 分析结果视图
 @Composable
@@ -387,7 +343,7 @@ fun AnalysisResultView(analysis: SuggestMessage) {
             )
         }
 
-        // 下一句预测
+        //
         Column(modifier = Modifier.padding(bottom = 16.dp)) {
             Text(
                 text = "回复分析:",
@@ -430,7 +386,6 @@ fun ExpandableText(
     maxLines: Int = 3
 ) {
     var isExpanded by remember { mutableStateOf(false) }
-    var needsExpansion by remember { mutableStateOf(false) }
 
     // 使用onTextLayout精确检测是否需要展开
     Text(
