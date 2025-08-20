@@ -7,7 +7,6 @@ import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
 import cn.lishiyuan.deepseek.Client
-import cn.lishiyuan.deepseek.DefualtClient
 import cn.lishiyuan.deepseek.api.EmptyRequest
 import cn.lishiyuan.deepseek.api.chat.ChatRequest
 import cn.lishiyuan.deepseek.api.chat.ChatRequest.Message
@@ -24,7 +23,6 @@ import com.liganma.chatmaster.data.SuggestMessage
 import com.liganma.chatmaster.utils.OkClient
 import com.liganma.chatmaster.utils.SK_REGEX
 import com.ven.assists.AssistsCore
-import com.ven.assists.AssistsCore.findByTags
 import com.ven.assists.AssistsCore.findByText
 import com.ven.assists.AssistsCore.getAllText
 import com.ven.assists.AssistsCore.getBoundsInScreen
@@ -56,7 +54,7 @@ fun  analyzingPage(context: Context):SuggestMessage{
 
     if (!SK_REGEX.matches(accessKey.value)) {
         Handler(Looper.getMainLooper()).post {
-            Toast.makeText(context,"密钥错误",Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.applicationContext,"密钥错误",Toast.LENGTH_SHORT).show()
         }
         return EMPTY
     }
@@ -64,7 +62,7 @@ fun  analyzingPage(context: Context):SuggestMessage{
     if(!AssistsCore.isAccessibilityServiceEnabled()){
         // 3. 强制切回主线程
         Handler(Looper.getMainLooper()).post {
-            Toast.makeText(context,"没有无障碍权限",Toast.LENGTH_SHORT).show();
+            Toast.makeText(context.applicationContext,"没有无障碍权限",Toast.LENGTH_SHORT).show();
         }
 
         return EMPTY
@@ -76,7 +74,7 @@ fun  analyzingPage(context: Context):SuggestMessage{
         val messageScreenFlag = AssistsCore.findByTags("android.widget.ImageView", des = "聊天信息")
         if(isEmpty(messageScreenFlag)){
             Handler(Looper.getMainLooper()).post {
-                Toast.makeText(context,"请在微信聊天页使用",Toast.LENGTH_SHORT).show()
+                Toast.makeText(context.applicationContext,"请在微信聊天页使用",Toast.LENGTH_SHORT).show()
             }
             return EMPTY;
         }
@@ -173,7 +171,7 @@ fun  analyzingPage(context: Context):SuggestMessage{
             return suggestMessage
         }catch (e:DeepSeekException){
             Handler(Looper.getMainLooper()).post {
-                Toast.makeText(context,"接口异常: ${e.message}",Toast.LENGTH_SHORT).show()
+                Toast.makeText(context.applicationContext,"接口异常: ${e.message}",Toast.LENGTH_SHORT).show()
             }
 
             return EMPTY
@@ -181,7 +179,7 @@ fun  analyzingPage(context: Context):SuggestMessage{
 
     }else{
         Handler(Looper.getMainLooper()).post {
-            Toast.makeText(context,"请在微信聊天页使用",Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.applicationContext,"请在微信聊天页使用",Toast.LENGTH_SHORT).show()
         }
         return EMPTY;
     }
@@ -193,7 +191,7 @@ fun testKey(context: Context){
 
     if (!SK_REGEX.matches(accessKey.value)) {
         Handler(Looper.getMainLooper()).post {
-            Toast.makeText(context,"密钥错误",Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.applicationContext,"密钥错误",Toast.LENGTH_SHORT).show()
         }
         return
     }
@@ -207,17 +205,17 @@ fun testKey(context: Context){
             balanceInfoResponse.balanceInfos
 
             Handler(Looper.getMainLooper()).post {
-                Toast.makeText(context,"连接成功",Toast.LENGTH_LONG).show()
+                Toast.makeText(context.applicationContext,"连接成功",Toast.LENGTH_LONG).show()
             }
         }else{
             Handler(Looper.getMainLooper()).post {
-                Toast.makeText(context,"key不可使用",Toast.LENGTH_SHORT).show()
+                Toast.makeText(context.applicationContext,"key不可使用",Toast.LENGTH_SHORT).show()
             }
         }
 
     }catch (e:DeepSeekException){
         Handler(Looper.getMainLooper()).post {
-            Toast.makeText(context,"连接异常: ${e.message}",Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.applicationContext,"连接异常: ${e.message}",Toast.LENGTH_SHORT).show()
         }
     }
 }

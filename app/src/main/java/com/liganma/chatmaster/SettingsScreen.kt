@@ -562,7 +562,7 @@ fun SettingsScreen(
                             onClick = {
                                 localPrompt = preset.content
                                 app.settingsRepository.savePrompt(preset.content)
-                                Toast.makeText(context,"${preset.name}预设已加载",Toast.LENGTH_SHORT).show();
+                                Toast.makeText(context.applicationContext,"${preset.name}预设已加载",Toast.LENGTH_SHORT).show();
                             },
                             modifier = Modifier.wrapContentWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(

@@ -78,7 +78,7 @@ fun copyToClipboard(context: Context, text: String) {
     val clipData = ClipData.newPlainText("chat_reply", text)
     clipboardManager.setPrimaryClip(clipData)
 
-    Toast.makeText(context, "内容已复制到剪贴板", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context.applicationContext, "内容已复制到剪贴板", Toast.LENGTH_SHORT).show()
 }
 
 fun showFloat(context: Context){

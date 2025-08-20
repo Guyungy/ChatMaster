@@ -9,6 +9,7 @@ android {
     namespace = "com.liganma.chatmaster"
     compileSdk = 36
 
+
     defaultConfig {
         applicationId = "com.liganma.chatmaster"
         minSdk = 26
@@ -37,7 +38,9 @@ android {
 
         release {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = true
+
+            isMinifyEnabled = false
+//            isMinifyEnabled = true // 不想写proguard-rules.pro
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -54,6 +57,29 @@ android {
     buildFeatures {
         compose = true
     }
+
+    applicationVariants.all {
+        val variant = this
+        variant.outputs
+            .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
+            .forEach { output ->
+                val versionName = variant.versionName ?: "unknown"
+                val buildType = variant.buildType.name
+                val appName = rootProject.name // <-- 请替换为您的实际应用名称或项目名称
+                val newApkName = StringBuilder()
+                    .append(appName)
+                    .append("-v")
+                    .append(versionName)
+                    .append("-")
+                    .append(buildType)
+                    .append(".apk")
+                    .toString()
+
+                // 设置新的 APK 文件名
+                output.outputFileName = newApkName
+            }
+    }
+
 }
 
 dependencies {
