@@ -2,7 +2,6 @@ name: Android CI
 
 on:
   push:
-    branches: [ "master" ]
     tags:
       - 'v*'
 
@@ -33,7 +32,6 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew assembleRelease
-          tree
 
       - name: Upload Debug Artifacts
         uses: softprops/action-gh-release@v2.0.8
@@ -45,4 +43,4 @@ jobs:
         uses: softprops/action-gh-release@v2.0.8
         with:
           token: ${{ secrets.TOKEN }}
-          files: app/release/*.apk
+          files: app/build/outputs/apk/release/*.apk
