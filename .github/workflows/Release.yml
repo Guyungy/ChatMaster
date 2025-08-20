@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [ master, release/* ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -56,7 +56,7 @@ jobs:
         run: ./gradlew assembleDebug
 
       - name: Build Release APK
-        if: github.ref_name == 'master' || startsWith(github.ref_name, 'release/')
+        if: github.ref_name == 'master'
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -72,7 +72,7 @@ jobs:
           retention-days: 7
 
       - name: Upload Release Artifacts
-        if: github.ref_name == 'master' || startsWith(github.ref_name, 'release/')
+        if: github.ref_name == 'master'
         uses: softprops/action-gh-release@v2.0.8
         with:
           token: ${{ secrets.TOKEN }}
