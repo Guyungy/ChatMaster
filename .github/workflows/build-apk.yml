@@ -62,20 +62,19 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo ${{ secrets.KEYSTORE_BASE64 }} | base64 -d > app/keystore.jks
           ./gradlew assembleRelease
 
       - name: Upload Debug Artifacts
-        uses: actions/upload-artifact@v3
+        uses: softprops/action-gh-release@v2.0.8
         with:
-          name: debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          token: ${{ secrets.TOKEN }}
+          files: app/build/outputs/apk/debug/*.apk
           retention-days: 7
 
       - name: Upload Release Artifacts
         if: github.ref_name == 'master' || startsWith(github.ref_name, 'release/')
-        uses: actions/upload-artifact@v3
+        uses: softprops/action-gh-release@v2.0.8
         with:
-          name: release-apk
-          path: app/build/outputs/apk/release/*.apk
+          token: ${{ secrets.TOKEN }}
+          files: app/build/outputs/apk/release/*.apk
           retention-days: 30
