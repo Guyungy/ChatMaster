@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://lishiyuan.com"><img width="100px" alt="logo" src="docs/icon.png"/></a>
-  <p><em>ChatMaster安卓AI辅助聊天工具，I人的社交工具，帮你撩妹谈恋爱、帮你谈客户成交订单、帮你应付领导。</em></p>
+  <p><em>ChatMaster安卓AI辅助聊天工具，I人的社交工具，帮你谈恋爱、帮你谈客户成交订单、帮你应付领导。</em></p>
 </div>   
 
 ---
