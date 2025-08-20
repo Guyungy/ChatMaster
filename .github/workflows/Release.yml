@@ -2,55 +2,29 @@ name: Android CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ master ]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ "master" ]
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - name: set up JDK 17
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
 
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version: 'latest'
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
-      - name: Make Gradle executable
-        run: chmod +x ./gradlew
-
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: ${{ runner.os }}-gradle-
-
-      - name: Cache Android dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.android/build-cache
-          key: ${{ runner.os }}-build-cache-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: ${{ runner.os }}-build-cache-
+      - name: Build with Gradle
+        run: ./gradlew build
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
