@@ -29,6 +29,9 @@ import java.io.IOException
 
 
 
+const val DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1"
+const val DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+
 val DEFAULT_PROMPT = """
     # Role：情感交流优化专家
 
@@ -215,6 +218,9 @@ class AppSettingsRepository(private val dataStore: DataStore<Preferences>,
     private val _prompt = MutableStateFlow("")
     val prompt: StateFlow<String> = _prompt.asStateFlow()
 
+    private val _baseUrl = MutableStateFlow(DEFAULT_OPENAI_BASE_URL)
+    val baseUrl: StateFlow<String> = _baseUrl.asStateFlow()
+
     init {
         // 从DataStore初始化状态（自动持续监听）
         applicationScope.launch {
@@ -231,6 +237,7 @@ class AppSettingsRepository(private val dataStore: DataStore<Preferences>,
                     _overlayEnabled.value = preferences[OVERLAY_ENABLED] ?: false
                     _accessKey.value = preferences[ACCESS_KEY] ?: ""
                     _prompt.value = preferences[PROMPT] ?: DEFAULT_PROMPT
+                    _baseUrl.value = preferences[BASE_URL] ?: DEFAULT_OPENAI_BASE_URL
                 }
         }
     }
@@ -262,9 +269,18 @@ class AppSettingsRepository(private val dataStore: DataStore<Preferences>,
 
     }
 
+    fun saveBaseUrl(value: String) {
+        applicationScope.launch {
+            dataStore.edit { settings ->
+                settings[BASE_URL] = value
+            }
+        }
+    }
+
     companion object {
         val OVERLAY_ENABLED = booleanPreferencesKey("overlayEnabled")
         val ACCESS_KEY = stringPreferencesKey("accessKey")
         val PROMPT = stringPreferencesKey("prompt")
+        val BASE_URL = stringPreferencesKey("baseUrl")
     }
 }

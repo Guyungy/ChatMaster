@@ -336,6 +336,7 @@ class SettingsViewModel(
     // accessKey
     val apiKey: StateFlow<String> = settingsRepository.accessKey
     val prompt:StateFlow<String> = settingsRepository.prompt
+    val baseUrl: StateFlow<String> = settingsRepository.baseUrl
 }
 
 // ViewModel工厂
@@ -372,15 +373,18 @@ fun SettingsScreen(
     // 关键修复：使用collectAsStateWithLifecycle确保正确收集
     val apiKey by viewModel.apiKey.collectAsStateWithLifecycle()
     val prompt by viewModel.prompt.collectAsStateWithLifecycle()
+    val baseUrl by viewModel.baseUrl.collectAsStateWithLifecycle()
 
     // 创建本地状态
     var localPrompt by remember { mutableStateOf(DEFAULT_PROMPT) }
     var localApiKey by remember { mutableStateOf("") }
+    var localBaseUrl by remember { mutableStateOf(DEFAULT_OPENAI_BASE_URL) }
 
     // 初始加载
     LaunchedEffect(Unit) {
         localPrompt = prompt
         localApiKey = apiKey
+        localBaseUrl = baseUrl
     }
 
 
@@ -466,7 +470,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "DeepSeek API密钥",
+                    text = "OpenAI API密钥",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -523,6 +527,38 @@ fun SettingsScreen(
                         errorTextColor = MaterialTheme.colorScheme.error,
                         errorLabelColor = MaterialTheme.colorScheme.error,
                         errorIndicatorColor = MaterialTheme.colorScheme.error
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "OpenAI接口地址",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = localBaseUrl,
+                    onValueChange = { newUrl ->
+                        localBaseUrl = newUrl
+                        app.settingsRepository.saveBaseUrl(newUrl)
+                    },
+                    label = { Text("API Base URL") },
+                    placeholder = { Text("例如 https://api.openai.com/v1") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.outline
                     )
                 )
             }

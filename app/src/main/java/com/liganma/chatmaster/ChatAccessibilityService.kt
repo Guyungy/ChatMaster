@@ -6,20 +6,17 @@ import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
-import cn.lishiyuan.deepseek.Client
-import cn.lishiyuan.deepseek.api.EmptyRequest
-import cn.lishiyuan.deepseek.api.chat.ChatRequest
-import cn.lishiyuan.deepseek.api.chat.ChatRequest.Message
-import cn.lishiyuan.deepseek.api.chat.ChatRequest.ResponseFormat
-import cn.lishiyuan.deepseek.config.enums.ModelEnums
-import cn.lishiyuan.deepseek.config.enums.ResponseFormatEnums
-import cn.lishiyuan.deepseek.config.enums.RoleEnums
-import cn.lishiyuan.deepseek.e.DeepSeekException
 import com.alibaba.fastjson2.to
 import com.blankj.utilcode.util.CollectionUtils.isEmpty
 import com.blankj.utilcode.util.CollectionUtils.isNotEmpty
 import com.liganma.chatmaster.data.SuggestItem
 import com.liganma.chatmaster.data.SuggestMessage
+import com.liganma.chatmaster.DEFAULT_OPENAI_BASE_URL
+import com.liganma.chatmaster.DEFAULT_OPENAI_MODEL
+import com.liganma.chatmaster.utils.ChatCompletionRequest
+import com.liganma.chatmaster.utils.OpenAiException
+import com.liganma.chatmaster.utils.OpenAiMessage
+import com.liganma.chatmaster.utils.OpenAiResponseFormat
 import com.liganma.chatmaster.utils.OkClient
 import com.liganma.chatmaster.utils.SK_REGEX
 import com.ven.assists.AssistsCore
@@ -30,9 +27,6 @@ import com.ven.assists.AssistsCore.getChildren
 import com.ven.assists.AssistsCore.getNodes
 import com.ven.assists.AssistsCore.isImageView
 import com.ven.assists.AssistsCore.isRelativeLayout
-
-
-private val BASE_URL = "https://api.deepseek.com/"
 
 val MSG_FORMAT = """
         聊天上下文如下：
@@ -147,29 +141,37 @@ fun  analyzingPage(context: Context):SuggestMessage{
 
         val prompt = app.settingsRepository.prompt
 
-        val client:Client = OkClient(accessKey.value)
+        val baseUrl = app.settingsRepository.baseUrl.value.ifBlank { DEFAULT_OPENAI_BASE_URL }
+        val client = OkClient(accessKey.value, baseUrl)
 
-        val systemMessage= Message()
-        systemMessage.role = RoleEnums.SYSTEM.code
-        systemMessage.content = prompt.value
-
-        val userMessage = Message()
-        userMessage.role = RoleEnums.USER.code
-        userMessage.content = MSG_FORMAT.format(msgContext)
-
-        val chatRequest = ChatRequest.create(listOf(systemMessage,userMessage),ModelEnums.DEEPSEEK_CHAT.code)
-        chatRequest.responseFormat = ResponseFormat()
-        chatRequest.responseFormat.type = ResponseFormatEnums.JSON_OBJECT.code
+        val chatRequest = ChatCompletionRequest(
+            model = DEFAULT_OPENAI_MODEL,
+            messages = listOf(
+                OpenAiMessage(role = "system", content = prompt.value),
+                OpenAiMessage(role = "user", content = MSG_FORMAT.format(msgContext))
+            ),
+            responseFormat = OpenAiResponseFormat(type = "json_object")
+        )
 
         try{
 
-            val chatResponse = client.post(chatRequest)
-            val choice = chatResponse.choices[0]
+            val chatResponse = client.createChatCompletion(chatRequest)
+            val choice = chatResponse.choices.firstOrNull()
+                ?: throw OpenAiException("未获取到模型返回结果")
             val jsonString = choice.message.content
+            if (jsonString.isBlank()) {
+                throw OpenAiException("模型返回内容为空")
+            }
             Log.d("ChatAccessibilityService","result:${jsonString}")
             val suggestMessage = jsonString.to<SuggestMessage>()
             return suggestMessage
-        }catch (e:DeepSeekException){
+        }catch (e:OpenAiException){
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(context.applicationContext,"接口异常: ${e.message}",Toast.LENGTH_SHORT).show()
+            }
+
+            return EMPTY
+        }catch (e:Exception){
             Handler(Looper.getMainLooper()).post {
                 Toast.makeText(context.applicationContext,"接口异常: ${e.message}",Toast.LENGTH_SHORT).show()
             }
@@ -196,26 +198,22 @@ fun testKey(context: Context){
         return
     }
 
-    val client:Client = OkClient(accessKey.value)
-    val createBalanceRequest = EmptyRequest.createBalanceRequest()
+    val baseUrl = app.settingsRepository.baseUrl.value.ifBlank { DEFAULT_OPENAI_BASE_URL }
+    val client = OkClient(accessKey.value, baseUrl)
     try {
-        var balanceInfoResponse = client.get(createBalanceRequest)
-        if(balanceInfoResponse.isAvailable){
+        client.verifyCredentials()
 
-            balanceInfoResponse.balanceInfos
-
-            Handler(Looper.getMainLooper()).post {
-                Toast.makeText(context.applicationContext,"连接成功",Toast.LENGTH_LONG).show()
-            }
-        }else{
-            Handler(Looper.getMainLooper()).post {
-                Toast.makeText(context.applicationContext,"key不可使用",Toast.LENGTH_SHORT).show()
-            }
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context.applicationContext,"连接成功",Toast.LENGTH_LONG).show()
         }
 
-    }catch (e:DeepSeekException){
+    }catch (e:OpenAiException){
         Handler(Looper.getMainLooper()).post {
-            Toast.makeText(context.applicationContext,"连接异常: ${e.message}",Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.applicationContext(),"连接异常: ${e.message}",Toast.LENGTH_SHORT).show()
+        }
+    }catch (e:Exception){
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context.applicationContext(),"连接异常: ${e.message}",Toast.LENGTH_SHORT).show()
         }
     }
 }
